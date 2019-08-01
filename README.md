@@ -1,0 +1,2 @@
+# IntegracaoManager
+Azure Function 
