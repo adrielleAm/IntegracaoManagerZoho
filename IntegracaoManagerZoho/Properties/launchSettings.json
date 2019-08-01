@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "IntegracaoManagerZoho": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ZohoRefreshToken": "1000.b64bf5abeb76eb8f7e4e933e63dda993.b477733ec303a27fc9e056440f955b54"
+      }
+    }
+  }
+}

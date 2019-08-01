@@ -7,27 +7,89 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Linq;
 
 namespace IntegracaoManagerZoho
 {
+   
+    public class Produto
+    {
+        public long id { get; set; }
+        public string Product_Name { get; set; }
+        public int QtdLicencas { get; set; }
+    }
+
+    public class ClienteZoho
+    {
+        public long id { get; set; }
+        public string C_digo_do_Cliente { get; set; }
+        public string Rescisao { get; set; }
+        public List<Produto> Produtos { get; set; }
+        public int CRC { get; set; }
+    }
+
+
     public static class Function1
     {
         [FunctionName("Function1")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", Route = null)] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            string name = req.Query["name"];
+            string module = "Accounts";
+            Zoho zoho = new Zoho();
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            var clienteZohos = JsonConvert.DeserializeObject<List<ClienteZoho>>(requestBody);
 
-            return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            //Recuperando os produtos distintos de todos os produtos
+            var produtosDistintos = clienteZohos.SelectMany(c => c.Produtos.Select(p => new { p.Product_Name, p.id })).Distinct().ToList();
+
+            foreach (var produto in produtosDistintos)
+            {
+                dynamic obj = JsonConvert.DeserializeObject(zoho.Get("Products", null, $"(Product_Name:starts_with:{produto.Product_Name})"));
+
+                /*APOS IMPLEMENTAR O MÓDULO DEALS
+                 * dynamic obj = JsonConvert.DeserializeObject(zoho.Get("Products", null, $"(Product_Name:equals:{produto.Product_Name})"));*/
+
+                //Atribuir id do produto no cliente produtos
+                //clienteZohos.FindAll(c => c.Produtos.Find(p => p.Product_Name == produto));
+                //.id = obj?.data[0]?.id);
+            }
+
+            //Atualizando as características do cliente 
+            foreach (var cliente in clienteZohos)
+            {
+                //Tratamento do código de cliente
+                cliente.C_digo_do_Cliente = Convert.ToInt32(cliente.C_digo_do_Cliente).ToString("00000");
+                
+                //Serializa a resposta (transforma o JSON em Objeto)
+                dynamic obj = JsonConvert.DeserializeObject(zoho.Get(module, null, $"(C_digo_do_Cliente:equals:{cliente.C_digo_do_Cliente})"));
+
+                //Recupera a ID do Zoho
+                cliente.id = obj?.data[0]?.id;
+
+                //Inserir produto
+                foreach (var produto in cliente.Produtos)
+                {
+                    //Passar o id cliente como numero 
+                }
+
+                log.LogInformation("Recuperando os ids dos clientes");
+            }
+
+            object reqObj = new { data = clienteZohos };
+            string strReqObj = JsonConvert.SerializeObject(reqObj);
+
+            string resp = zoho.Update(module, strReqObj);
+
+            //Resposta da webRequest
+            log.LogInformation(resp);
+
+            return new OkObjectResult("");
         }
     }
 }
