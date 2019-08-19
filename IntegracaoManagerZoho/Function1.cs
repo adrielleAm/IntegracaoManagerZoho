@@ -81,16 +81,17 @@ namespace IntegracaoManagerZoho
                 //    //Passar o id cliente como numero 
                 //}
 
-                log.LogInformation("Recuperando os ids dos clientes");
+                log.LogInformation($"Atualizando o cliente {cliente.id}");
             }
 
             object reqObj = new { data = clienteZohos };
             string strReqObj = JsonConvert.SerializeObject(reqObj);
 
+            log.LogInformation("Atualizando os clintes em massa");
             string resp = zoho.Update(module, strReqObj);
 
             //Resposta da webRequest
-            log.LogInformation(resp);
+            log.LogInformation($"Respota zoho Update {resp}");
 
             return new OkObjectResult("");
         }
