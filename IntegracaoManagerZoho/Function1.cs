@@ -28,6 +28,7 @@ namespace IntegracaoManagerZoho
         public string C_digo_do_Cliente { get; set; }
         public string Rescisao { get; set; }
         public List<Produto> Produtos { get; set; }
+        public string Produtos_Atendidos { get; set; }
         public int CRC { get; set; }
     }
 
@@ -45,20 +46,20 @@ namespace IntegracaoManagerZoho
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var clienteZohos = JsonConvert.DeserializeObject<List<ClienteZoho>>(requestBody);
 
-            //Recuperando os produtos distintos de todos os produtos
+            //Recuperando os produtos distintos de todos os clientes
             var produtosDistintos = clienteZohos.SelectMany(c => c.Produtos.Select(p => new { p.Product_Name, p.id })).Distinct().ToList();
 
-            foreach (var produto in produtosDistintos)
-            {
-                dynamic obj = JsonConvert.DeserializeObject(zoho.Get("Products", null, $"(Product_Name:starts_with:{produto.Product_Name})"));
+            //foreach (var produto in produtosDistintos)
+            //{
+            //    dynamic obj = JsonConvert.DeserializeObject(zoho.Get("Products", null, $"(Product_Name:starts_with:{produto.Product_Name})"));
 
-                /*APOS IMPLEMENTAR O MÓDULO DEALS
-                 * dynamic obj = JsonConvert.DeserializeObject(zoho.Get("Products", null, $"(Product_Name:equals:{produto.Product_Name})"));*/
+            //    /*APOS IMPLEMENTAR O MÓDULO DEALS
+            //     * dynamic obj = JsonConvert.DeserializeObject(zoho.Get("Products", null, $"(Product_Name:equals:{produto.Product_Name})"));*/
 
-                //Atribuir id do produto no cliente produtos
-                //clienteZohos.FindAll(c => c.Produtos.Find(p => p.Product_Name == produto));
-                //.id = obj?.data[0]?.id);
-            }
+            //    //Atribuir id do produto no cliente produtos
+            //    //clienteZohos.FindAll(c => c.Produtos.Find(p => p.Product_Name == produto));
+            //    //.id = obj?.data[0]?.id);
+            //}
 
             //Atualizando as características do cliente 
             foreach (var cliente in clienteZohos)
@@ -71,12 +72,14 @@ namespace IntegracaoManagerZoho
 
                 //Recupera a ID do Zoho
                 cliente.id = obj?.data[0]?.id;
+                var prods = cliente.Produtos.Select(p => p.Product_Name).ToArray();
+                cliente.Produtos_Atendidos = string.Join(", ", prods);
 
-                //Inserir produto
-                foreach (var produto in cliente.Produtos)
-                {
-                    //Passar o id cliente como numero 
-                }
+                ////Inserir produto
+                //foreach (var produto in cliente.Produtos)
+                //{
+                //    //Passar o id cliente como numero 
+                //}
 
                 log.LogInformation("Recuperando os ids dos clientes");
             }
